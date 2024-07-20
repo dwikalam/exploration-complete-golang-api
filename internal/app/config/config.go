@@ -3,14 +3,13 @@ package config
 import "os"
 
 var (
-	HostServer string
-	PortServer string
+	ServerHost = getConfigValue("SERVER_HOST", "localhost")
+	ServerPort = getConfigValue("SERVER_PORT", "5000")
 )
 
-func init() {
-	HostServer = getConfigValue("SERVER_HOST", "localhost")
-	PortServer = getConfigValue("SERVER_PORT", "5000")
-}
+var (
+	PsqlURL = getConfigValue("POSTGRESQL_URL", "")
+)
 
 func getConfigValue(envKey string, defaultValue string) string {
 	v, ok := os.LookupEnv(envKey)
