@@ -13,8 +13,8 @@ type TestService struct {
 }
 
 func NewTestService(logger interfaces.Logger, testRepo *repositories.TestRepository) (TestService, error) {
-	if testRepo == nil {
-		return TestService{}, errors.New("*repositories.TestRepository is nil")
+	if logger == nil || testRepo == nil {
+		return TestService{}, errors.New("logger or testRepo is nil")
 	}
 
 	return TestService{

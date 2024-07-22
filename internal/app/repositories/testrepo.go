@@ -12,8 +12,8 @@ type TestRepository struct {
 }
 
 func NewTestRepo(logger interfaces.Logger, db interfaces.DbManager) (TestRepository, error) {
-	if db == nil {
-		return TestRepository{}, errors.New("interfaces.Database is nil")
+	if logger == nil || db == nil {
+		return TestRepository{}, errors.New("logger or db is nil")
 	}
 
 	return TestRepository{

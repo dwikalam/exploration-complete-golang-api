@@ -40,10 +40,6 @@ func Run(
 	)
 
 	defaultLogger = loggers.NewDefaultLogger(stdout, stderr)
-	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
-	}
 
 	cfg, err = config.New()
 	if err != nil {

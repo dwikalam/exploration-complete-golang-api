@@ -19,8 +19,8 @@ func NewTestHandler(
 	logger interfaces.Logger,
 	testService *services.TestService,
 ) (TestHandler, error) {
-	if testService == nil {
-		return TestHandler{}, errors.New("error *services.TestService is nil")
+	if logger == nil || testService == nil {
+		return TestHandler{}, errors.New("logger or testService is nil")
 	}
 
 	return TestHandler{
