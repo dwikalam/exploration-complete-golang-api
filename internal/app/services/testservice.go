@@ -12,27 +12,24 @@ type TestService struct {
 	testRepo *repositories.TestRepository
 }
 
-func NewTestService(
-	logger interfaces.Logger,
-	testRepo *repositories.TestRepository,
-) (TestService, error) {
+func NewTestService(logger interfaces.Logger, testRepo *repositories.TestRepository) (TestService, error) {
 	if testRepo == nil {
 		return TestService{}, errors.New("*repositories.TestRepository is nil")
 	}
 
 	return TestService{
-		logger,
-		testRepo,
+		logger:   logger,
+		testRepo: testRepo,
 	}, nil
 }
 
 func (s *TestService) HelloWorld() (string, error) {
+	const v = "Hello, World!"
+
 	_, err := s.testRepo.GetAllTest()
 	if err != nil {
 		return "", err
 	}
-
-	const v = "Hello, World!"
 
 	return v, nil
 }

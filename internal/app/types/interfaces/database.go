@@ -5,14 +5,19 @@ import (
 	"database/sql"
 )
 
-type DBAccessor interface {
+type DbManager interface {
+	dbAccessor
+	dbHealthChecker
+	dbDisconnector
+}
+
+type dbAccessor interface {
 	Access() *sql.DB
 }
-
-type DBHealthChecker interface {
-	Health(ctx context.Context) (map[string]string, error)
+type dbHealthChecker interface {
+	CheckHealth(ctx context.Context) (map[string]string, error)
 }
 
-type DBDisconnector interface {
+type dbDisconnector interface {
 	Disconnect() error
 }

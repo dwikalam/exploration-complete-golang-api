@@ -27,68 +27,77 @@ func Run(
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	baselogger, err := loggers.NewBaseLogger(stdout, stderr)
+	var (
+		defaultLogger loggers.DefaultLogger
+		cfg           config.Config
+		psqlDB        db.PostgresqlDB
+
+		testRepository repositories.TestRepository
+		testService    services.TestService
+		testHandler    handlers.TestHandler
+
+		err error
+	)
+
+	defaultLogger = loggers.NewDefaultLogger(stdout, stderr)
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
 
-	cfg, err := config.NewConfig()
+	cfg, err = config.New()
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	// Databases
-	psqlDB, err := db.NewPostgresqlDB(&baselogger, cfg.PsqlURL)
+	psqlDB, err = db.NewPostgresqlDB(&defaultLogger, cfg.PsqlURL)
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
-	_, err = psqlDB.Health(ctx)
+	_, err = psqlDB.CheckHealth(ctx)
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	// Repositories
-	testRepository, err := repositories.NewTestRepo(&baselogger, &psqlDB)
+	testRepository, err = repositories.NewTestRepo(&defaultLogger, &psqlDB)
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	// Services
-	testService, err := services.NewTestService(&baselogger, &testRepository)
+	testService, err = services.NewTestService(&defaultLogger, &testRepository)
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	// Handlers
-	testHandler, err := handlers.NewTestHandler(&baselogger, &testService)
+	testHandler, err = handlers.NewTestHandler(&defaultLogger, &testService)
 	if err != nil {
-		baselogger.Error(err.Error())
+		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	httpServer := &http.Server{
-		Addr: net.JoinHostPort(cfg.ServerHost, cfg.ServerPort),
-		Handler: routes.NewHttpHandler(
-			&baselogger,
-			&testHandler,
-		),
+		Addr:         net.JoinHostPort(cfg.ServerHost, cfg.ServerPort),
+		Handler:      routes.NewHttpHandler(&defaultLogger, &testHandler),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  time.Second * 1,
 		WriteTimeout: time.Second * 2,
 	}
 
 	listenAndServe := func() {
-		baselogger.Info(fmt.Sprintf("listening on %s", httpServer.Addr))
+		defaultLogger.Info(fmt.Sprintf("listening on %s", httpServer.Addr))
 
 		err := httpServer.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
-			baselogger.Error(fmt.Sprintf("error listening and serving %s: %s", httpServer.Addr, err))
+			defaultLogger.Error(fmt.Sprintf("error listening and serving %s: %s", httpServer.Addr, err))
 
 			return
 		}
@@ -107,17 +116,17 @@ func Run(
 
 		err := httpServer.Shutdown(shutdownCtx)
 		if err != nil {
-			baselogger.Error(fmt.Sprintf("shutting down http server: %s", err))
+			defaultLogger.Error(fmt.Sprintf("shutting down http server: %s", err))
 		}
 
-		baselogger.Warn("server shutdown")
+		defaultLogger.Warn("server shutdown")
 
 		err = psqlDB.Disconnect()
 		if err != nil {
-			baselogger.Error(fmt.Sprintf("closing database: %s", err))
+			defaultLogger.Error(fmt.Sprintf("closing database: %s", err))
 		}
 
-		baselogger.Warn("database closed")
+		defaultLogger.Warn("database closed")
 	}
 
 	wg.Add(1)

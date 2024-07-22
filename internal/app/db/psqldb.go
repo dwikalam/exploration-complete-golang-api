@@ -11,31 +11,28 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type postgresqlDB struct {
+type PostgresqlDB struct {
 	logger interfaces.Logger
 	db     *sql.DB
 }
 
-func NewPostgresqlDB(
-	logger interfaces.Logger,
-	psqlURL string,
-) (postgresqlDB, error) {
+func NewPostgresqlDB(logger interfaces.Logger, psqlURL string) (PostgresqlDB, error) {
 	db, err := sql.Open("pgx", psqlURL)
 	if err != nil {
-		return postgresqlDB{}, err
+		return PostgresqlDB{}, err
 	}
 
-	return postgresqlDB{
-		logger,
-		db,
+	return PostgresqlDB{
+		logger: logger,
+		db:     db,
 	}, nil
 }
 
-func (p *postgresqlDB) Access() *sql.DB {
+func (p *PostgresqlDB) Access() *sql.DB {
 	return p.db
 }
 
-func (p *postgresqlDB) Health(ctx context.Context) (map[string]string, error) {
+func (p *PostgresqlDB) CheckHealth(ctx context.Context) (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*1)
 	defer cancel()
 
@@ -82,7 +79,7 @@ func (p *postgresqlDB) Health(ctx context.Context) (map[string]string, error) {
 	return stats, nil
 }
 
-func (p *postgresqlDB) Disconnect() error {
+func (p *PostgresqlDB) Disconnect() error {
 	var dbName string
 
 	if err := p.db.QueryRow("SELECT current_database()").Scan(&dbName); err != nil {

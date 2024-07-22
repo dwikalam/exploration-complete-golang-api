@@ -24,12 +24,12 @@ func NewTestHandler(
 	}
 
 	return TestHandler{
-		logger,
-		testService,
+		logger:      logger,
+		testService: testService,
 	}, nil
 }
 
-func (h *TestHandler) IndexHandler() http.Handler {
+func (h *TestHandler) HandleResponseHelloWorld() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			v, err := h.testService.HelloWorld()

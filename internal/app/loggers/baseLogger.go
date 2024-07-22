@@ -5,13 +5,13 @@ import (
 	"log"
 )
 
-type baseLogger struct {
+type DefaultLogger struct {
 	infoLogger  *log.Logger
 	warnLogger  *log.Logger
 	errorLogger *log.Logger
 }
 
-func NewBaseLogger(stdout, stderr io.Writer) (baseLogger, error) {
+func NewDefaultLogger(stdout, stderr io.Writer) DefaultLogger {
 	const (
 		ResetColor  = "\033[0m"
 		RedColor    = "\033[31m"
@@ -25,22 +25,22 @@ func NewBaseLogger(stdout, stderr io.Writer) (baseLogger, error) {
 		errorLoggerPrefix = RedColor + "ERROR: " + ResetColor
 	)
 
-	return baseLogger{
+	return DefaultLogger{
 		infoLogger:  newLogger(stdout, infoLoggerPrefix),
 		warnLogger:  newLogger(stdout, warnLoggerPrefix),
 		errorLogger: newLogger(stderr, errorLoggerPrefix),
-	}, nil
+	}
 }
 
-func (l *baseLogger) Info(message string) {
+func (l *DefaultLogger) Info(message string) {
 	l.infoLogger.Output(2, message)
 }
 
-func (l *baseLogger) Warn(message string) {
+func (l *DefaultLogger) Warn(message string) {
 	l.warnLogger.Output(2, message)
 }
 
-func (l *baseLogger) Error(message string) {
+func (l *DefaultLogger) Error(message string) {
 	l.errorLogger.Output(2, message)
 }
 

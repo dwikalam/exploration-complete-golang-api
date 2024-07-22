@@ -8,20 +8,17 @@ import (
 
 type TestRepository struct {
 	logger interfaces.Logger
-	db     interfaces.DBAccessor
+	db     interfaces.DbManager
 }
 
-func NewTestRepo(
-	logger interfaces.Logger,
-	db interfaces.DBAccessor,
-) (TestRepository, error) {
+func NewTestRepo(logger interfaces.Logger, db interfaces.DbManager) (TestRepository, error) {
 	if db == nil {
 		return TestRepository{}, errors.New("interfaces.Database is nil")
 	}
 
 	return TestRepository{
-		logger,
-		db,
+		logger: logger,
+		db:     db,
 	}, nil
 }
 
