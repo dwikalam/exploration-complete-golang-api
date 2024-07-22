@@ -1,25 +1,29 @@
 package services
 
 import (
+	"errors"
+
 	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
+	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 )
 
 type TestService struct {
+	logger   interfaces.Logger
 	testRepo *repositories.TestRepository
 }
 
-var (
-	instance *TestService
-)
-
-func GetTestServiceInstance() *TestService {
-	if instance != nil {
-		return instance
+func NewTestService(
+	logger interfaces.Logger,
+	testRepo *repositories.TestRepository,
+) (TestService, error) {
+	if testRepo == nil {
+		return TestService{}, errors.New("error * repositories.TestRepository is nil")
 	}
 
-	return &TestService{
-		testRepo: repositories.GetTestRepositoryInstance(),
-	}
+	return TestService{
+		logger,
+		testRepo,
+	}, nil
 }
 
 func (s *TestService) HelloWorld() (string, error) {

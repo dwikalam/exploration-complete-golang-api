@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -15,8 +14,10 @@ import (
 	"github.com/dwikalam/ecommerce-service/internal/app/config"
 	"github.com/dwikalam/ecommerce-service/internal/app/db"
 	"github.com/dwikalam/ecommerce-service/internal/app/handlers"
+	"github.com/dwikalam/ecommerce-service/internal/app/logger"
+	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
 	"github.com/dwikalam/ecommerce-service/internal/app/routes"
-	"github.com/dwikalam/ecommerce-service/internal/app/types/customerr"
+	"github.com/dwikalam/ecommerce-service/internal/app/services"
 )
 
 func Run(
@@ -26,27 +27,63 @@ func Run(
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 
-	if err := db.Initialize(); err != nil && !errors.Is(err, &customerr.DatabaseAlreadyConnectedError{}) {
+	logger, err := logger.NewBaseLogger(stdout, stderr)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	// Databases
+	psqlDB, err := db.NewPostgresqlDB(&logger, cfg.PsqlURL)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	// Repositories
+	testRepository, err := repositories.NewTestRepo(&logger, &psqlDB)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	// Services
+	testService, err := services.NewTestService(&logger, &testRepository)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
+	// Handlers
+	testHandler, err := handlers.NewTestHandler(&logger, &testService)
+	if err != nil {
+		logger.Error(err.Error())
 		return err
 	}
 
 	httpServer := &http.Server{
-		Addr: net.JoinHostPort(config.ServerHost, config.ServerPort),
+		Addr: net.JoinHostPort(cfg.ServerHost, cfg.ServerPort),
 		Handler: routes.NewHttpHandler(
-			handlers.NewTestHandler(),
+			&logger,
+			&testHandler,
 		),
 		IdleTimeout:  time.Minute,
-		ReadTimeout:  time.Second * 10,
-		WriteTimeout: time.Second * 30,
+		ReadTimeout:  time.Second * 1,
+		WriteTimeout: time.Second * 2,
 	}
 
 	listenAndServe := func() {
-		fmt.Fprintf(stdout, "listening on %s\n", httpServer.Addr)
+		logger.Info(fmt.Sprintf("listening on %s", httpServer.Addr))
 
 		err := httpServer.ListenAndServe()
-
 		if err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(stderr, "error listening and serving %s\n", httpServer.Addr)
+			logger.Error(fmt.Sprintf("error listening and serving %s: %s", httpServer.Addr, err))
 
 			return
 		}
@@ -60,12 +97,22 @@ func Run(
 
 		<-ctx.Done()
 
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 
-		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			fmt.Fprintf(stderr, "error shutting down http server: %s\n", err)
+		err := httpServer.Shutdown(shutdownCtx)
+		if err != nil {
+			logger.Error(fmt.Sprintf("shutting down http server: %s", err))
 		}
+
+		logger.Warn("server shutdown")
+
+		err = psqlDB.Disconnect()
+		if err != nil {
+			logger.Error(fmt.Sprintf("closing database: %s", err))
+		}
+
+		logger.Warn("database closed")
 	}
 
 	wg.Add(1)

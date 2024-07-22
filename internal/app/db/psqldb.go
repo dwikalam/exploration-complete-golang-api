@@ -4,47 +4,42 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
-	"github.com/dwikalam/ecommerce-service/internal/app/config"
-	"github.com/dwikalam/ecommerce-service/internal/app/types/customerr"
+	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type Database struct {
-	*sql.DB
+type postgresqlDB struct {
+	logger interfaces.Logger
+	db     *sql.DB
 }
 
-var (
-	instance *Database
-)
-
-func Initialize() error {
-	if instance != nil {
-		return &customerr.DatabaseAlreadyConnectedError{}
-	}
-
-	db, err := sql.Open("pgx", config.PsqlURL)
+func NewPostgresqlDB(
+	logger interfaces.Logger,
+	psqlURL string,
+) (postgresqlDB, error) {
+	db, err := sql.Open("pgx", psqlURL)
 	if err != nil {
-		return err
+		return postgresqlDB{}, err
 	}
 
-	instance = &Database{db}
-
-	return nil
+	return postgresqlDB{
+		logger,
+		db,
+	}, nil
 }
 
-func GetInstance() *Database {
-	return instance
+func (p *postgresqlDB) Access() *sql.DB {
+	return p.db
 }
 
-func (db *Database) Health() (map[string]string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
+func (p *postgresqlDB) Health(ctx context.Context) (map[string]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*1)
 	defer cancel()
 
-	err := db.PingContext(ctx)
+	err := p.db.PingContext(ctx)
 	if err != nil {
 		stats := map[string]string{
 			"status": "down",
@@ -54,7 +49,7 @@ func (db *Database) Health() (map[string]string, error) {
 		return stats, err
 	}
 
-	dbStats := db.Stats()
+	dbStats := p.db.Stats()
 
 	stats := map[string]string{
 		"status":              "up",
@@ -68,7 +63,7 @@ func (db *Database) Health() (map[string]string, error) {
 		"max_lifetime_closed": strconv.Itoa(int(dbStats.MaxLifetimeClosed)),
 	}
 
-	if dbStats.OpenConnections > 40 { // Assuming 50 is the max for this example
+	if dbStats.OpenConnections > 40 {
 		stats["message"] = "The database is experiencing heavy load."
 	}
 
@@ -87,20 +82,16 @@ func (db *Database) Health() (map[string]string, error) {
 	return stats, nil
 }
 
-func (db *Database) Disconnect() error {
+func (p *postgresqlDB) Disconnect() error {
 	var dbName string
 
-	if err := db.QueryRow("SELECT current_database()").Scan(&dbName); err != nil {
-		log.Printf("error fetching database name: %v", err)
+	if err := p.db.QueryRow("SELECT current_database()").Scan(&dbName); err != nil {
+		p.logger.Error(fmt.Sprintf("error fetching database name: %v", err))
 	}
 
-	if err := db.Close(); err != nil {
-		log.Printf("error disconnecting from database: %s", dbName)
-
+	if err := p.db.Close(); err != nil {
 		return err
 	}
-
-	fmt.Printf("Disconnected from database: %s", dbName)
 
 	return nil
 }

@@ -4,9 +4,11 @@ import (
 	"net/http"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/handlers"
+	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 )
 
 func NewHttpHandler(
+	logger interfaces.Logger,
 	testHandler *handlers.TestHandler,
 ) http.Handler {
 	mux := http.NewServeMux()
