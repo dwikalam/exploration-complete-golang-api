@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dwikalam/ecommerce-service/internal/app/constants"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/dto"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 )
@@ -14,7 +15,7 @@ func Encode[T any](
 	statusCode int,
 	message string,
 	data T,
-) error {
+) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
@@ -24,10 +25,8 @@ func Encode[T any](
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		return fmt.Errorf("error encode json: %w", err)
+		http.Error(w, constants.InternalServerErrorMsg, http.StatusInternalServerError)
 	}
-
-	return nil
 }
 
 func Decode[T any](r *http.Request) (T, error) {

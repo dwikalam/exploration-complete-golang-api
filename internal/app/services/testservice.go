@@ -17,7 +17,7 @@ func NewTestService(
 	testRepo *repositories.TestRepository,
 ) (TestService, error) {
 	if testRepo == nil {
-		return TestService{}, errors.New("error * repositories.TestRepository is nil")
+		return TestService{}, errors.New("*repositories.TestRepository is nil")
 	}
 
 	return TestService{
@@ -27,7 +27,10 @@ func NewTestService(
 }
 
 func (s *TestService) HelloWorld() (string, error) {
-	s.testRepo.GetAllTest()
+	_, err := s.testRepo.GetAllTest()
+	if err != nil {
+		return "", err
+	}
 
 	const v = "Hello, World!"
 

@@ -35,18 +35,22 @@ func (h *TestHandler) IndexHandler() http.Handler {
 			v, err := h.testService.HelloWorld()
 			if err != nil {
 				h.logger.Error(err.Error())
-				http.Error(w, constants.InternalServerErrorMsg, http.StatusInternalServerError)
+				helpers.Encode[any](
+					w,
+					http.StatusInternalServerError,
+					constants.InternalServerErrorMsg,
+					nil,
+				)
+
+				return
 			}
 
-			if err := helpers.Encode(
+			helpers.Encode(
 				w,
 				http.StatusOK,
 				"test endpoint successfully running",
 				v,
-			); err != nil {
-				h.logger.Error(err.Error())
-				http.Error(w, constants.InternalServerErrorMsg, http.StatusInternalServerError)
-			}
+			)
 		},
 	)
 }

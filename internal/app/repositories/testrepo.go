@@ -8,15 +8,15 @@ import (
 
 type TestRepository struct {
 	logger interfaces.Logger
-	db     interfaces.Database
+	db     interfaces.DBAccessor
 }
 
 func NewTestRepo(
 	logger interfaces.Logger,
-	db interfaces.Database,
+	db interfaces.DBAccessor,
 ) (TestRepository, error) {
 	if db == nil {
-		return TestRepository{}, errors.New("error interfaces.Database is nil")
+		return TestRepository{}, errors.New("interfaces.Database is nil")
 	}
 
 	return TestRepository{
