@@ -45,6 +45,11 @@ func Run(
 		logger.Error(err.Error())
 		return err
 	}
+	_, err = psqlDB.Health(ctx)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
 
 	// Repositories
 	testRepository, err := repositories.NewTestRepo(&logger, &psqlDB)

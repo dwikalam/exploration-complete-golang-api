@@ -1,6 +1,6 @@
 package config
 
-import "os"
+import "github.com/dwikalam/ecommerce-service/internal/app/helpers"
 
 type Config struct {
 	serverConfig
@@ -17,6 +17,10 @@ type dbConfig struct {
 }
 
 func NewConfig() (Config, error) {
+	if err := helpers.LoadEnv(); err != nil {
+		return Config{}, err
+	}
+
 	serverConfig, err := newServerConfig()
 	if err != nil {
 		return Config{}, err
@@ -36,25 +40,15 @@ func NewConfig() (Config, error) {
 
 func newServerConfig() (serverConfig, error) {
 	return serverConfig{
-			ServerHost: getConfigValue("SERVER_HOST", "localhost"),
-			ServerPort: getConfigValue("SERVER_PORT", "5000"),
+			ServerHost: helpers.GetEnvValue("SERVER_HOST", "localhost"),
+			ServerPort: helpers.GetEnvValue("SERVER_PORT", "5000"),
 		},
 		nil
 }
 
 func newDbConfig() (dbConfig, error) {
 	return dbConfig{
-			PsqlURL: getConfigValue("POSTGRESQL_URL", ""),
+			PsqlURL: helpers.GetEnvValue("POSTGRESQL_URL", ""),
 		},
 		nil
-}
-
-func getConfigValue(envKey string, defaultValue string) string {
-	v, ok := os.LookupEnv(envKey)
-
-	if !ok {
-		return defaultValue
-	}
-
-	return v
 }
