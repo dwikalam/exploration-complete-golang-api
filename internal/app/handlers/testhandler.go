@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/constants"
 	"github.com/dwikalam/ecommerce-service/internal/app/helpers"
@@ -29,12 +30,13 @@ func NewTestHandler(
 	}, nil
 }
 
-func (h *TestHandler) HandleResponseHelloWorld() http.Handler {
+func (h *TestHandler) HandleHelloWorldResponse() http.Handler {
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			v, err := h.testService.HelloWorld()
+			v, err := h.testService.HelloWorld(r.Context())
 			if err != nil {
 				h.logger.Error(err.Error())
+
 				helpers.Encode[any](
 					w,
 					http.StatusInternalServerError,
@@ -48,11 +50,37 @@ func (h *TestHandler) HandleResponseHelloWorld() http.Handler {
 			helpers.Encode(
 				w,
 				http.StatusOK,
-				"test endpoint successfully running",
+				"HandleHelloWorldResponse successfully running",
 				v,
 			)
 		},
 	)
 }
 
-// interface
+func (h *TestHandler) HandleTimeoutExceededResponse() http.Handler {
+	return http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			const duration = time.Second * 5
+
+			if err := h.testService.OperateFor(r.Context(), duration); err != nil {
+				h.logger.Error(err.Error())
+
+				helpers.Encode[any](
+					w,
+					http.StatusInternalServerError,
+					constants.InternalServerErrorMsg,
+					nil,
+				)
+
+				return
+			}
+
+			helpers.Encode[any](
+				w,
+				200,
+				"HandleTimeoutExceededResponse successfully running",
+				nil,
+			)
+		},
+	)
+}

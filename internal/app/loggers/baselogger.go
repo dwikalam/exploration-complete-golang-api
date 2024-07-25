@@ -13,16 +13,20 @@ type DefaultLogger struct {
 
 func NewDefaultLogger(stdout, stderr io.Writer) DefaultLogger {
 	const (
-		ResetColor  = "\033[0m"
-		RedColor    = "\033[31m"
-		YellowColor = "\033[33m"
-		GreenColor  = "\033[32m"
+		resetColor  = "\033[0m"
+		redColor    = "\033[31m"
+		yellowColor = "\033[33m"
+		greenColor  = "\033[32m"
+
+		infoPlaceholder    = "INFO:    "
+		warningPlaceholder = "WARNING: "
+		errorPlaceholder   = "ERROR:   "
 	)
 
 	var (
-		infoLoggerPrefix  = GreenColor + "INFO: " + ResetColor
-		warnLoggerPrefix  = YellowColor + "WARNING: " + ResetColor
-		errorLoggerPrefix = RedColor + "ERROR: " + ResetColor
+		infoLoggerPrefix  = greenColor + infoPlaceholder + resetColor
+		warnLoggerPrefix  = yellowColor + warningPlaceholder + resetColor
+		errorLoggerPrefix = redColor + errorPlaceholder + resetColor
 	)
 
 	return DefaultLogger{

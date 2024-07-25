@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"time"
 
@@ -48,7 +49,7 @@ func Run(
 	}
 
 	// Databases
-	psqlDB, err = db.NewPostgresqlDB(&defaultLogger, cfg.PsqlURL)
+	psqlDB, err = db.NewPostgresqlDB(&defaultLogger, cfg.Db.PsqlURL)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
@@ -80,12 +81,17 @@ func Run(
 		return err
 	}
 
+	srvMux := routes.NewHttpHandler(
+		&defaultLogger,
+		&testHandler,
+	)
+
 	httpServer := &http.Server{
-		Addr:         net.JoinHostPort(cfg.ServerHost, cfg.ServerPort),
-		Handler:      routes.NewHttpHandler(&defaultLogger, &testHandler),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  time.Second * 1,
-		WriteTimeout: time.Second * 2,
+		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
+		Handler:      http.TimeoutHandler(srvMux, cfg.Server.HandlerTimeout, cfg.Server.TimeoutMessage),
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
+		IdleTimeout:  cfg.Server.IdleTimeout,
 	}
 
 	listenAndServe := func() {

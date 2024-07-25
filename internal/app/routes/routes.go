@@ -11,7 +11,8 @@ func NewHttpHandler(logger interfaces.Logger, testHandler *handlers.TestHandler)
 	mux := http.NewServeMux()
 
 	if testHandler != nil {
-		mux.Handle("GET /api/v1/test", testHandler.HandleResponseHelloWorld())
+		mux.Handle("GET /api/v1/test", testHandler.HandleHelloWorldResponse())
+		mux.Handle("GET /api/v1/test/timeout", testHandler.HandleTimeoutExceededResponse())
 	}
 
 	return mux

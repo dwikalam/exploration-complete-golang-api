@@ -1,7 +1,9 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
@@ -23,13 +25,35 @@ func NewTestService(logger interfaces.Logger, testRepo *repositories.TestReposit
 	}, nil
 }
 
-func (s *TestService) HelloWorld() (string, error) {
-	const v = "Hello, World!"
+func (s *TestService) HelloWorld(ctx context.Context) (string, error) {
+	vChannel := func() <-chan string {
+		const v = "Hello, World!"
 
-	_, err := s.testRepo.GetAllTest()
-	if err != nil {
-		return "", err
+		ch := make(chan string)
+
+		go func() {
+			select {
+			case <-ctx.Done():
+			case ch <- v:
+			}
+		}()
+
+		return ch
 	}
 
-	return v, nil
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case v := <-vChannel():
+		return v, nil
+	}
+}
+
+func (s *TestService) OperateFor(ctx context.Context, d time.Duration) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-time.After(d):
+		return nil
+	}
 }
