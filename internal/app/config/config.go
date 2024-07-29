@@ -14,16 +14,16 @@ type Config struct {
 }
 
 func New() (Config, error) {
-	if err := godotenv.Load(); err != nil {
-		return Config{}, err
-	}
-
 	var (
 		serverConfig serverConfig
 		dbConfig     dbConfig
 
 		err error
 	)
+
+	if err := godotenv.Load(); err != nil {
+		return Config{}, err
+	}
 
 	serverConfig, err = newServerConfig()
 	if err != nil {
@@ -113,11 +113,9 @@ func newDbConfig() (dbConfig, error) {
 }
 
 func getEnvValue(envKey string, defaultValue string) string {
-	v, ok := os.LookupEnv(envKey)
-
-	if !ok {
-		return defaultValue
+	if v, ok := os.LookupEnv(envKey); ok {
+		return v
 	}
 
-	return v
+	return defaultValue
 }

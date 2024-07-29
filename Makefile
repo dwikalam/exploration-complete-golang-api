@@ -1,7 +1,11 @@
-mainPath = cmd/api/main.go
+entryPointPath = cmd/api/main.go
+binPath = bin/ecomm
 
-run:
-	@go run $(mainPath)
+build: 
+	@go build -race -gcflags "-m" -o $(binPath) $(entryPointPath)
 
-build-escape-analysis:
-	@go build -gcflags "-m" $(mainPath)
+run: build
+	@./$(binPath)
+
+test: 
+	@go test -v ./tests/...
