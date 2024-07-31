@@ -1,5 +1,7 @@
 package interfaces
 
+import "context"
+
 type Validator interface {
-	Valid() (problems map[string]string)
+	Valid(ctx context.Context) (problems map[string]string)
 }

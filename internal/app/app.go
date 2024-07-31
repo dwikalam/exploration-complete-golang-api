@@ -19,6 +19,7 @@ import (
 	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
 	"github.com/dwikalam/ecommerce-service/internal/app/routes"
 	"github.com/dwikalam/ecommerce-service/internal/app/services"
+	"github.com/dwikalam/ecommerce-service/internal/app/transaction"
 )
 
 func Run(
@@ -29,18 +30,19 @@ func Run(
 	defer cancel()
 
 	var (
-		defaultLogger loggers.DefaultLogger
+		defaultLogger loggers.Default
 		cfg           config.Config
-		psqlDB        db.PostgresqlDB
+		psqlDB        db.Psql
 
-		testRepository repositories.TestRepository
-		testService    services.TestService
-		testHandler    handlers.TestHandler
+		testRepository repositories.Test
+		txManager      transaction.SQLTransactionManager
+		testService    services.Test
+		testHandler    handlers.Test
 
 		err error
 	)
 
-	defaultLogger = loggers.NewDefaultLogger(stdout, stderr)
+	defaultLogger = loggers.NewDefault(stdout, stderr)
 
 	cfg, err = config.New()
 	if err != nil {
@@ -49,7 +51,7 @@ func Run(
 	}
 
 	// Databases
-	psqlDB, err = db.NewPostgresqlDB(&defaultLogger, cfg.Db.PsqlURL)
+	psqlDB, err = db.NewPsql(&defaultLogger, cfg.Db.PsqlURL)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
@@ -60,22 +62,25 @@ func Run(
 		return err
 	}
 
+	// Transaction Manager
+	txManager, err = transaction.NewManager(&psqlDB)
+
 	// Repositories
-	testRepository, err = repositories.NewTestRepo(&defaultLogger, &psqlDB)
+	testRepository, err = repositories.NewTest(&defaultLogger, &psqlDB)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	// Services
-	testService, err = services.NewTestService(&defaultLogger, &testRepository)
+	testService, err = services.NewTest(&defaultLogger, &txManager, &testRepository)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
 	}
 
 	// Handlers
-	testHandler, err = handlers.NewTestHandler(&defaultLogger, &testService)
+	testHandler, err = handlers.NewTest(&defaultLogger, &testService)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
