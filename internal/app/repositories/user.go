@@ -14,7 +14,7 @@ type User struct {
 
 func NewUser(db interfaces.DbQuerier) (User, error) {
 	if db == nil {
-		return User{}, errors.New("logger or db is nil")
+		return User{}, errors.New("nil db")
 	}
 
 	return User{

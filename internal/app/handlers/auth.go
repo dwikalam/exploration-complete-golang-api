@@ -111,7 +111,6 @@ func (h *Auth) HandleRegister() http.Handler {
 			successMsg,
 			response,
 		)
-
 	})
 }
 

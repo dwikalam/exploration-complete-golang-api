@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/dwikalam/ecommerce-service/internal/app/helpers"
 	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/dto/repodto"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/dto/svcdto"
@@ -20,11 +21,11 @@ func NewAuth(
 	authRepo *repositories.User,
 ) (Auth, error) {
 	if txManager == nil {
-		return Auth{}, errors.New("txManager is nil")
+		return Auth{}, errors.New("nil txManager")
 	}
 
 	if authRepo == nil {
-		return Auth{}, errors.New("authRepo is nil")
+		return Auth{}, errors.New("nil authRepo")
 	}
 
 	return Auth{
@@ -42,11 +43,9 @@ func (s *Auth) RegisterUser(
 			Email: argDto.Email,
 		}
 
-		createUserArgDto repodto.CreateUserArg = repodto.CreateUserArg{
-			FullName: argDto.FullName,
-			Email:    argDto.Email,
-			Password: argDto.Password,
-		}
+		hashedPassword []byte
+
+		createUserArgDto repodto.CreateUserArg
 		createUserRetDto repodto.UserRet
 
 		svcRetDto svcdto.RegisteredUserRet
@@ -58,6 +57,15 @@ func (s *Auth) RegisterUser(
 		return svcdto.RegisteredUserRet{}, err
 	}
 
+	if hashedPassword, err = helpers.BcryptHashedPassword(argDto.Password); err != nil {
+		return svcdto.RegisteredUserRet{}, err
+	}
+
+	createUserArgDto = repodto.CreateUserArg{
+		FullName: argDto.FullName,
+		Email:    argDto.Email,
+		Password: string(hashedPassword),
+	}
 	createUserRetDto, err = s.authRepo.Create(ctx, &createUserArgDto)
 
 	svcRetDto = svcdto.RegisteredUserRet{

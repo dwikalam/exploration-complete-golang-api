@@ -140,17 +140,22 @@ func (p *RegisterUser) validatePassword(ctx context.Context) <-chan error {
 
 		validate = func() error {
 			const (
-				errmsg string = "password must contain minimal length of 8 and uppercase, lowercase, number, and special characters"
+				minLength = 8
+				maxLength = 50
+
+				errmsg string = "password must contain minimal length of 8, maximal length of 50, and uppercase, lowercase, number, and special characters"
 			)
 
 			var (
+				passwordLength int = len(p.Password)
+
 				hasUpper   bool = false
 				hasLower   bool = false
 				hasNumber  bool = false
 				hasSpecial bool = false
 			)
 
-			if len(p.Password) < 8 {
+			if passwordLength < minLength || passwordLength > maxLength {
 				return errors.New(errmsg)
 			}
 
