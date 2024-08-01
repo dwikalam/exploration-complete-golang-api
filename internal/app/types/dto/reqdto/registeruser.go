@@ -6,17 +6,19 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/dwikalam/ecommerce-service/internal/app/types/customtype"
 )
 
-type RegisterUserPayload struct {
+type RegisterUser struct {
 	FullName string `json:"fullName"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-func (p *RegisterUserPayload) Valid(ctx context.Context) map[string]string {
+func (p *RegisterUser) Valid(ctx context.Context) customtype.ProblemsMap {
 	var (
-		problems = make(map[string]string)
+		problems customtype.ProblemsMap = make(map[string]string)
 
 		nameProblem     <-chan error
 		emailProblem    <-chan error
@@ -48,7 +50,7 @@ func (p *RegisterUserPayload) Valid(ctx context.Context) map[string]string {
 	return problems
 }
 
-func (p *RegisterUserPayload) validatePayloadStructure() error {
+func (p *RegisterUser) validatePayloadStructure() error {
 	if p.FullName == "" || p.Email == "" || p.Password == "" {
 		return errors.New("payload structure not valid")
 	}
@@ -56,7 +58,7 @@ func (p *RegisterUserPayload) validatePayloadStructure() error {
 	return nil
 }
 
-func (p *RegisterUserPayload) validateFullName(ctx context.Context) <-chan error {
+func (p *RegisterUser) validateFullName(ctx context.Context) <-chan error {
 	var (
 		ch = make(chan error)
 
@@ -102,7 +104,7 @@ func (p *RegisterUserPayload) validateFullName(ctx context.Context) <-chan error
 	return ch
 }
 
-func (p *RegisterUserPayload) validateEmail(ctx context.Context) <-chan error {
+func (p *RegisterUser) validateEmail(ctx context.Context) <-chan error {
 	var (
 		ch = make(chan error)
 
@@ -132,7 +134,7 @@ func (p *RegisterUserPayload) validateEmail(ctx context.Context) <-chan error {
 	return ch
 }
 
-func (p *RegisterUserPayload) validatePassword(ctx context.Context) <-chan error {
+func (p *RegisterUser) validatePassword(ctx context.Context) <-chan error {
 	var (
 		ch = make(chan error)
 

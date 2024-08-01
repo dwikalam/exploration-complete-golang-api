@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dwikalam/ecommerce-service/internal/app/constants"
+	"github.com/dwikalam/ecommerce-service/internal/app/types/customtype"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/dto/respdto"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 )
@@ -15,18 +15,16 @@ func Encode[T any](
 	statusCode int,
 	message string,
 	data T,
-) {
-	w.Header().Set("Content-Type", "application/json")
+) error {
 	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "application/json")
 
 	response := respdto.Response[T]{
 		Message: message,
 		Data:    data,
 	}
 
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, constants.InternalServerErrorMsg, http.StatusInternalServerError)
-	}
+	return json.NewEncoder(w).Encode(response)
 }
 
 func Decode[T any](r *http.Request) (T, error) {
@@ -39,7 +37,7 @@ func Decode[T any](r *http.Request) (T, error) {
 	return v, nil
 }
 
-func DecodeValid[T interfaces.Validator](r *http.Request) (payload T, problems map[string]string, err error) {
+func DecodeValid[T interfaces.Validator](r *http.Request) (payload T, problems customtype.ProblemsMap, err error) {
 	if err = json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return payload, nil, fmt.Errorf("error decode valid json: %w", err)
 	}

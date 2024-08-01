@@ -1,7 +1,11 @@
 package interfaces
 
-import "context"
+import (
+	"context"
+
+	"github.com/dwikalam/ecommerce-service/internal/app/types/customtype"
+)
 
 type Validator interface {
-	Valid(ctx context.Context) (problems map[string]string)
+	Valid(ctx context.Context) customtype.ProblemsMap
 }

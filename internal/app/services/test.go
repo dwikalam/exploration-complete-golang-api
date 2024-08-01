@@ -10,22 +10,23 @@ import (
 )
 
 type Test struct {
-	logger    interfaces.Logger
 	txManager interfaces.TransactionManager
 	testRepo  *repositories.Test
 }
 
 func NewTest(
-	logger interfaces.Logger,
 	txManager interfaces.TransactionManager,
 	testRepo *repositories.Test,
 ) (Test, error) {
-	if logger == nil || txManager == nil || testRepo == nil {
-		return Test{}, errors.New("there is nil dependency")
+	if txManager == nil {
+		return Test{}, errors.New("nil txManager")
+	}
+
+	if testRepo == nil {
+		return Test{}, errors.New("nil testRepo")
 	}
 
 	return Test{
-		logger:    logger,
 		txManager: txManager,
 		testRepo:  testRepo,
 	}, nil

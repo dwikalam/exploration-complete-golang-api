@@ -13,16 +13,14 @@ type Test struct {
 }
 
 func NewTest(
-	logger interfaces.Logger,
 	db interfaces.DbQuerier,
 ) (Test, error) {
-	if logger == nil || db == nil {
-		return Test{}, errors.New("there is nil dependency")
+	if db == nil {
+		return Test{}, errors.New("nil db")
 	}
 
 	return Test{
-		logger: logger,
-		db:     db,
+		db: db,
 	}, nil
 }
 
