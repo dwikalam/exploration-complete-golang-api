@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -15,16 +16,21 @@ import (
 
 type Auth struct {
 	logger      interfaces.Logger
-	authService services.Auth
+	authService *services.Auth
 }
 
-func NewAuth(logger *interfaces.Logger) (Auth, error) {
+func NewAuth(logger interfaces.Logger, authService *services.Auth) (Auth, error) {
 	if logger == nil {
-		return Auth{}, nil
+		return Auth{}, errors.New("nil logger")
+	}
+
+	if authService == nil {
+		return Auth{}, errors.New("nil authService")
 	}
 
 	return Auth{
-		logger: *logger,
+		logger:      logger,
+		authService: authService,
 	}, nil
 }
 

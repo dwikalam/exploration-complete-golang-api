@@ -34,10 +34,16 @@ func Run(
 		cfg           config.Config
 		psqlDB        db.Psql
 
+		txManager transaction.SQLTransactionManager
+
 		testRepository repositories.Test
-		txManager      transaction.SQLTransactionManager
-		testService    services.Test
-		testHandler    handlers.Test
+		userRepository repositories.User
+
+		testService services.Test
+		authService services.Auth
+
+		testHandler handlers.Test
+		authHandler handlers.Auth
 
 		err error
 	)
@@ -64,9 +70,18 @@ func Run(
 
 	// Transaction Manager
 	txManager, err = transaction.NewManager(&psqlDB)
+	if err != nil {
+		defaultLogger.Error(err.Error())
+		return err
+	}
 
 	// Repositories
 	testRepository, err = repositories.NewTest(&psqlDB)
+	if err != nil {
+		defaultLogger.Error(err.Error())
+		return err
+	}
+	userRepository, err = repositories.NewUser(&psqlDB)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
@@ -78,9 +93,19 @@ func Run(
 		defaultLogger.Error(err.Error())
 		return err
 	}
+	authService, err = services.NewAuth(&txManager, &userRepository)
+	if err != nil {
+		defaultLogger.Error(err.Error())
+		return err
+	}
 
 	// Handlers
 	testHandler, err = handlers.NewTest(&defaultLogger, &testService)
+	if err != nil {
+		defaultLogger.Error(err.Error())
+		return err
+	}
+	authHandler, err = handlers.NewAuth(&defaultLogger, &authService)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err
@@ -89,6 +114,7 @@ func Run(
 	srvMux := routes.NewHttpHandler(
 		&defaultLogger,
 		&testHandler,
+		&authHandler,
 	)
 
 	httpServer := &http.Server{
