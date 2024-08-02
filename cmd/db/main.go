@@ -61,9 +61,9 @@ func run(args []string) error {
 		return m.Up()
 	case downArg:
 		return m.Down()
+	default:
+		return errors.New("no migrate commands executed")
 	}
-
-	return nil
 }
 
 func validatedArgs(args []string) (string, error) {
