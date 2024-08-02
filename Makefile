@@ -1,5 +1,7 @@
 bin_dir = bin/ecomm
 
+api_entry_dir = cmd/api
+
 db_entry_dir = cmd/db
 migrations_dir = $(db_entry_dir)/migrations
 
@@ -7,7 +9,7 @@ up_arg = -up
 down_arg = -down
 
 build: 
-	@go build -race -gcflags "-m" -o $(bin_dir) $(entryPointPath)
+	@go build -race -gcflags "-m" -o $(bin_dir) $(api_entry_dir)/main.go
 
 run: build
 	@./$(bin_dir)
