@@ -57,7 +57,7 @@ func Run(
 	}
 
 	// Databases
-	psqlDB, err = db.NewPsql(&defaultLogger, cfg.Db.PsqlURL)
+	psqlDB, err = db.NewPsql(cfg.Db.PsqlURL)
 	if err != nil {
 		defaultLogger.Error(err.Error())
 		return err

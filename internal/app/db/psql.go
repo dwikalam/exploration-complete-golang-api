@@ -4,28 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/transaction"
-	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Psql struct {
-	logger interfaces.Logger
-	db     *sql.DB
+	db *sql.DB
 }
 
-func NewPsql(logger interfaces.Logger, psqlURL string) (Psql, error) {
+func NewPsql(psqlURL string) (Psql, error) {
 	db, err := sql.Open("pgx", psqlURL)
 	if err != nil {
 		return Psql{}, err
 	}
 
 	return Psql{
-		logger: logger,
-		db:     db,
+		db: db,
 	}, nil
 }
 
@@ -116,7 +114,7 @@ func (p *Psql) Disconnect() error {
 	var dbName string
 
 	if err := p.db.QueryRow("SELECT current_database()").Scan(&dbName); err != nil {
-		p.logger.Error(fmt.Sprintf("error fetching database name: %v", err))
+		log.Printf("error fetching database name: %v", err)
 	}
 
 	if err := p.db.Close(); err != nil {
