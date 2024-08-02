@@ -3,13 +3,13 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
 )
 
 type Test struct {
-	logger interfaces.Logger
-	db     interfaces.DbQuerier
+	db interfaces.DbQuerier
 }
 
 func NewTest(
@@ -24,7 +24,7 @@ func NewTest(
 	}, nil
 }
 
-func (repo *Test) GetAll(ctx context.Context) (any, error) {
+func (r *Test) GetAll(ctx context.Context) (any, error) {
 	const (
 		query string = `
 			SELECT 
@@ -34,7 +34,7 @@ func (repo *Test) GetAll(ctx context.Context) (any, error) {
 		`
 	)
 
-	rows, err := repo.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -42,4 +42,16 @@ func (repo *Test) GetAll(ctx context.Context) (any, error) {
 	defer rows.Close()
 
 	return nil, nil
+}
+
+func (r *Test) SimpleQuery(ctx context.Context) (int, error) {
+	var result int
+
+	err := r.db.QueryRowContext(ctx, "SELECT 1").Scan(&result)
+
+	if err != nil {
+		return 0, fmt.Errorf("simple query failed: %v", err)
+	}
+
+	return result, nil
 }

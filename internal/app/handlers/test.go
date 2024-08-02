@@ -94,6 +94,8 @@ func (h *Test) HandleTransactionTest() http.Handler {
 				constants.InternalServerErrorMsg,
 				nil,
 			)
+
+			return
 		}
 
 		helpers.Encode[any](

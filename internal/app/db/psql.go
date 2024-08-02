@@ -33,26 +33,26 @@ func (p *Psql) Access() *sql.DB {
 
 func (p *Psql) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	if tx, ok := transaction.ExtractTxFromContext(ctx); ok {
-		return tx.QueryRowContext(ctx, query, args)
+		return tx.QueryRowContext(ctx, query, args...)
 	}
 
-	return p.db.QueryRowContext(ctx, query, args)
+	return p.db.QueryRowContext(ctx, query, args...)
 }
 
 func (p *Psql) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	if tx, ok := transaction.ExtractTxFromContext(ctx); ok {
-		return tx.QueryContext(ctx, query, args)
+		return tx.QueryContext(ctx, query, args...)
 	}
 
-	return p.db.QueryContext(ctx, query, args)
+	return p.db.QueryContext(ctx, query, args...)
 }
 
 func (p *Psql) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	if tx, ok := transaction.ExtractTxFromContext(ctx); ok {
-		return tx.ExecContext(ctx, query, args)
+		return tx.ExecContext(ctx, query, args...)
 	}
 
-	return p.db.ExecContext(ctx, query, args)
+	return p.db.ExecContext(ctx, query, args...)
 }
 
 func (p *Psql) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {

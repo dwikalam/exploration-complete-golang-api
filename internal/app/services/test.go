@@ -69,14 +69,14 @@ func (s *Test) OperateFor(ctx context.Context, d time.Duration) error {
 
 func (s *Test) Transaction(ctx context.Context) (string, error) {
 	var (
+		simpleTransaction = func(ctx context.Context) error {
+			_, err := s.testRepo.SimpleQuery(ctx)
+
+			return err
+		}
+
 		result = func() string {
-			testTx := func(ctx context.Context) error {
-				_, err := s.testRepo.GetAll(ctx)
-
-				return err
-			}
-
-			err := s.txManager.Run(ctx, testTx)
+			err := s.txManager.Run(ctx, simpleTransaction)
 			if err != nil {
 				return "failed"
 			}
