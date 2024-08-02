@@ -1,5 +1,7 @@
 package repodto
 
+import "time"
+
 type GetUserByEmailArg struct {
 	Email string
 }
@@ -11,8 +13,10 @@ type CreateUserArg struct {
 }
 
 type UserRet struct {
-	ID       string `json:"id"`
-	FullName string `json:"fullName"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID        string
+	FullName  string
+	Email     string
+	Password  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

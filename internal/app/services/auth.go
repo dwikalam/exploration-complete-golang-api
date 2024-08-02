@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/helpers"
 	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
@@ -38,6 +39,10 @@ func (s *Auth) RegisterUser(
 	ctx context.Context,
 	argDto *svcdto.RegisterUserArg,
 ) (svcdto.RegisteredUserRet, error) {
+	const (
+		svcErrorPlaceholder string = "register user failed"
+	)
+
 	var (
 		getUserByEmailArgDto repodto.GetUserByEmailArg = repodto.GetUserByEmailArg{
 			Email: argDto.Email,
@@ -53,12 +58,12 @@ func (s *Auth) RegisterUser(
 		err error
 	)
 
-	if _, err = s.authRepo.GetByEmail(ctx, getUserByEmailArgDto); err != nil {
-		return svcdto.RegisteredUserRet{}, err
+	if _, err = s.authRepo.GetByEmail(ctx, getUserByEmailArgDto); err == nil {
+		return svcdto.RegisteredUserRet{}, fmt.Errorf("%s: email already exist", svcErrorPlaceholder)
 	}
 
 	if hashedPassword, err = helpers.BcryptHashedPassword(argDto.Password); err != nil {
-		return svcdto.RegisteredUserRet{}, err
+		return svcdto.RegisteredUserRet{}, fmt.Errorf("%s: %v", svcErrorPlaceholder, err)
 	}
 
 	createUserArgDto = repodto.CreateUserArg{
@@ -67,6 +72,9 @@ func (s *Auth) RegisterUser(
 		Password: string(hashedPassword),
 	}
 	createUserRetDto, err = s.authRepo.Create(ctx, &createUserArgDto)
+	if err != nil {
+		return svcdto.RegisteredUserRet{}, fmt.Errorf("%s: %v", svcErrorPlaceholder, err)
+	}
 
 	svcRetDto = svcdto.RegisteredUserRet{
 		ID:       createUserRetDto.ID,
@@ -75,5 +83,5 @@ func (s *Auth) RegisterUser(
 		Password: createUserRetDto.Password,
 	}
 
-	return svcRetDto, err
+	return svcRetDto, nil
 }

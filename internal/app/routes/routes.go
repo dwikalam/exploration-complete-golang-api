@@ -17,12 +17,12 @@ func NewHttpHandler(
 	if testHandler != nil {
 		mux.Handle("GET /api/v1/test", testHandler.HandleHelloWorldResponse())
 		mux.Handle("GET /api/v1/test/timeout", testHandler.HandleTimeoutExceededResponse())
-		mux.Handle("GET /api/v1/test/transaction", testHandler.HandleTimeoutExceededResponse())
+		mux.Handle("GET /api/v1/test/transaction", testHandler.HandleTransactionTest())
 	}
 
 	if authHandler != nil {
-		mux.Handle("POST /api/v1/register", authHandler.HandleRegister())
-		mux.Handle("POST /api/v1/login", authHandler.HandleLogin())
+		mux.Handle("POST /api/v1/auth/register", authHandler.HandleRegister())
+		mux.Handle("POST /api/v1/auth/login", authHandler.HandleLogin())
 	}
 
 	return mux

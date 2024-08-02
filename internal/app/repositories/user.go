@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/types/dto/repodto"
 	"github.com/dwikalam/ecommerce-service/internal/app/types/interfaces"
@@ -28,9 +30,9 @@ func (r *User) GetByEmail(ctx context.Context, argDto repodto.GetUserByEmailArg)
 			SELECT 
 				*
 			FROM
-				user
+				user_
 			WHERE
-				email = ?
+				email_ = $1
 		`
 	)
 
@@ -43,15 +45,18 @@ func (r *User) GetByEmail(ctx context.Context, argDto repodto.GetUserByEmailArg)
 	err = r.db.QueryRowContext(
 		ctx,
 		query,
-		[]any{
-			argDto.Email,
-		},
+		argDto.Email,
 	).Scan(
 		&user.ID,
 		&user.FullName,
 		&user.Email,
 		&user.Password,
+		&user.CreatedAt,
+		&user.UpdatedAt,
 	)
+	if err != nil && err != sql.ErrNoRows {
+		return user, fmt.Errorf("get user by email failed: %w", err)
+	}
 
 	return user, err
 }
@@ -63,22 +68,23 @@ func (r *User) Create(ctx context.Context, argDto *repodto.CreateUserArg) (repod
 
 	const (
 		query = `
-			INSERT INTO user (
-				fullname, 
-				email, 
-				password
+			INSERT INTO user_ (
+				fullname_, 
+				email_, 
+				password_
 			) 
 			VALUES (
-				?, 
-				?, 
-				?
+				$1, 
+				$2, 
+				$3
 			)
-			RETURNING (
-				id,
-				fullname,
-				email,
-				password
-			)
+			RETURNING
+				id_,
+				fullname_,
+				email_,
+				password_,
+				created_at_,
+				updated_at_
 		`
 	)
 
@@ -91,17 +97,21 @@ func (r *User) Create(ctx context.Context, argDto *repodto.CreateUserArg) (repod
 	err = r.db.QueryRowContext(
 		ctx,
 		query,
-		[]any{
-			argDto.FullName,
-			argDto.Email,
-			argDto.Password,
-		},
+		argDto.FullName,
+		argDto.Email,
+		argDto.Password,
 	).Scan(
 		&user.ID,
 		&user.FullName,
 		&user.Email,
 		&user.Password,
+		&user.CreatedAt,
+		&user.UpdatedAt,
 	)
 
-	return user, err
+	if err != nil {
+		return user, fmt.Errorf("creating user failed: %w", err)
+	}
+
+	return user, nil
 }

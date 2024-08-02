@@ -11,9 +11,9 @@ import (
 )
 
 type RegisterUser struct {
-	FullName string `json:"fullName"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	FullName string
+	Email    string
+	Password string
 }
 
 func (p *RegisterUser) Valid(ctx context.Context) customtype.ProblemsMap {
@@ -64,7 +64,7 @@ func (p *RegisterUser) validateFullName(ctx context.Context) <-chan error {
 
 		validate = func() error {
 			const (
-				nameRegexPattern string = `^[A-Za-z\s'-]`
+				nameRegexPattern string = `^[a-zA-Z\s'-]+$`
 			)
 
 			var (

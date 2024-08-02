@@ -87,7 +87,7 @@ func (h *Auth) HandleRegister() http.Handler {
 		}
 		registerSvcRet, err = h.authService.RegisterUser(r.Context(), &registerSvcArg)
 		if err != nil {
-			const errData = "email has been registered"
+			const errData = "email already exist"
 
 			h.logger.Error(err.Error())
 
