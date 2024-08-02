@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/dwikalam/ecommerce-service/internal/app/config"
+	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/config"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -32,20 +32,20 @@ func run(args []string) error {
 
 	var (
 		arg string
-		cfg config.Config
+		cfg config.EnvConfig
 		m   *migrate.Migrate
 
 		err error
 	)
 
-	cfg, err = config.New()
+	cfg, err = config.NewEnvConfig()
 	if err != nil {
 		return err
 	}
 
 	m, err = migrate.New(
 		migrationsDir,
-		cfg.Db.PsqlURL,
+		cfg.GetDbPsqlDSN(),
 	)
 	if err != nil {
 		return err

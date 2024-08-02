@@ -12,14 +12,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dwikalam/ecommerce-service/internal/app/config"
-	"github.com/dwikalam/ecommerce-service/internal/app/db"
-	"github.com/dwikalam/ecommerce-service/internal/app/handlers"
-	"github.com/dwikalam/ecommerce-service/internal/app/loggers"
-	"github.com/dwikalam/ecommerce-service/internal/app/repositories"
-	"github.com/dwikalam/ecommerce-service/internal/app/routes"
-	"github.com/dwikalam/ecommerce-service/internal/app/services"
+	"github.com/dwikalam/ecommerce-service/internal/app/db/sqldb"
+	"github.com/dwikalam/ecommerce-service/internal/app/handler/authhandler"
+	"github.com/dwikalam/ecommerce-service/internal/app/handler/testhandler"
+	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/config"
+	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/crypto"
+	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/logger"
+	"github.com/dwikalam/ecommerce-service/internal/app/route"
+	"github.com/dwikalam/ecommerce-service/internal/app/service/authsvc"
+	"github.com/dwikalam/ecommerce-service/internal/app/service/testsvc"
+	"github.com/dwikalam/ecommerce-service/internal/app/store/teststore"
+	"github.com/dwikalam/ecommerce-service/internal/app/store/userstore"
 	"github.com/dwikalam/ecommerce-service/internal/app/transaction"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Run(
@@ -30,99 +35,94 @@ func Run(
 	defer cancel()
 
 	var (
-		defaultLogger loggers.Default
-		cfg           config.Config
-		psqlDB        db.Psql
+		defaultLogger logger.Default
+		cfg           config.EnvConfig
+		psqlDB        sqldb.DB
 
 		txManager transaction.SQLTransactionManager
 
-		testRepository repositories.Test
-		userRepository repositories.User
+		testStoreSQL teststore.SQLStore
+		userStoreSQL userstore.SQLStore
 
-		testService services.Test
-		authService services.Auth
+		testService testsvc.Test
+		authService authsvc.Auth
 
-		testHandler handlers.Test
-		authHandler handlers.Auth
+		testHandler testhandler.Test
+		authHandler authhandler.Auth
 
 		err error
 	)
 
-	defaultLogger = loggers.NewDefault(stdout, stderr)
+	defaultLogger = logger.NewDefault(stdout, stderr)
 
-	cfg, err = config.New()
+	cfg, err = config.NewEnvConfig()
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating env config failed: %w", err)
+	}
+
+	bcrypt, err := crypto.NewBcrypt(bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("creating bcrypt failed: %w", err)
 	}
 
 	// Databases
-	psqlDB, err = db.NewPsql(cfg.Db.PsqlURL)
+	psqlDB, err = sqldb.NewDB(cfg.GetDbPsqlDriver(), cfg.GetDbPsqlDSN())
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating psqldb failed: %w", err)
 	}
 	_, err = psqlDB.CheckHealth(ctx)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("check psqldb health failed: %w", err)
 	}
 
 	// Transaction Manager
 	txManager, err = transaction.NewManager(&psqlDB)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating txManager failed: %w", err)
 	}
 
 	// Repositories
-	testRepository, err = repositories.NewTest(&psqlDB)
+	testStoreSQL, err = teststore.NewTest(&psqlDB)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating testStoreSQL failed: %w", err)
 	}
-	userRepository, err = repositories.NewUser(&psqlDB)
+	userStoreSQL, err = userstore.NewSQLStore(&psqlDB)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating userStoreSQL failed: %w", err)
 	}
 
 	// Services
-	testService, err = services.NewTest(&txManager, &testRepository)
+	testService, err = testsvc.NewTest(&txManager, &testStoreSQL)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating testService failed: %w", err)
 	}
-	authService, err = services.NewAuth(&txManager, &userRepository)
+	authService, err = authsvc.NewAuth(&txManager, &userStoreSQL, &bcrypt)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating authService failed: %w", err)
 	}
 
 	// Handlers
-	testHandler, err = handlers.NewTest(&defaultLogger, &testService)
+	testHandler, err = testhandler.NewTest(&defaultLogger, &testService)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating testHandler failed: %w", err)
 	}
-	authHandler, err = handlers.NewAuth(&defaultLogger, &authService)
+	authHandler, err = authhandler.NewAuth(&defaultLogger, &authService)
 	if err != nil {
-		defaultLogger.Error(err.Error())
-		return err
+		return fmt.Errorf("creating authHandler failed: %w", err)
 	}
 
-	srvMux := routes.NewHttpHandler(
+	srvMux := route.NewHttpHandler(
 		&defaultLogger,
 		&testHandler,
 		&authHandler,
 	)
 
 	httpServer := &http.Server{
-		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
-		Handler:      http.TimeoutHandler(srvMux, cfg.Server.HandlerTimeout, cfg.Server.TimeoutMessage),
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-		IdleTimeout:  cfg.Server.IdleTimeout,
+		Addr:         net.JoinHostPort(cfg.GetServerHost(), strconv.Itoa(cfg.GetServerPort())),
+		Handler:      http.TimeoutHandler(srvMux, cfg.GetServerHandlerTimeout(), cfg.GetServerTimeoutMessage()),
+		ReadTimeout:  cfg.GetServerReadTimeout(),
+		WriteTimeout: cfg.GetServerWriteTimeout(),
+		IdleTimeout:  cfg.GetServerIdleTimeout(),
 	}
 
 	var (
