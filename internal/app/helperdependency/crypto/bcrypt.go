@@ -19,13 +19,13 @@ func NewBcrypt(cost int) (Bcrypt, error) {
 func (b *Bcrypt) Hash(plain string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plain), b.cost)
 
-	return string(hash), fmt.Errorf("bcrypt hash failed: %w", err)
+	return string(hash), fmt.Errorf("bcrypt generate from password failed: %v", err)
 }
 
 func (b *Bcrypt) Compare(hashed string, plain string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
 	if err != nil {
-		return fmt.Errorf("bcrypt compare failed: %w", err)
+		return fmt.Errorf("bcrypt compare hash and password failed: %v", err)
 	}
 
 	return nil

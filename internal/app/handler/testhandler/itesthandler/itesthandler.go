@@ -2,7 +2,7 @@ package itesthandler
 
 import "net/http"
 
-type TestHandler interface {
+type Handler interface {
 	HandleHelloWorldResponse() http.Handler
 	HandleTimeoutExceededResponse() http.Handler
 	HandleTransactionTest() http.Handler

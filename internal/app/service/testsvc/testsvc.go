@@ -10,13 +10,13 @@ import (
 )
 
 type Test struct {
-	txManager itransaction.TransactionManager
-	testStore iteststore.TestStorer
+	txManager itransaction.Manager
+	testStore iteststore.Storer
 }
 
 func NewTest(
-	txManager itransaction.TransactionManager,
-	testStore iteststore.TestStorer,
+	txManager itransaction.Manager,
+	testStore iteststore.Storer,
 ) (Test, error) {
 	if txManager == nil {
 		return Test{}, errors.New("nil txManager")

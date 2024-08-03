@@ -5,13 +5,11 @@ import (
 
 	"github.com/dwikalam/ecommerce-service/internal/app/handler/authhandler/iauthhandler"
 	"github.com/dwikalam/ecommerce-service/internal/app/handler/testhandler/itesthandler"
-	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/logger/ilogger"
 )
 
 func NewHttpHandler(
-	logger ilogger.Logger,
-	testHandler itesthandler.TestHandler,
-	authHandler iauthhandler.AuthHandler,
+	testHandler itesthandler.Handler,
+	authHandler iauthhandler.Handler,
 ) http.Handler {
 	mux := http.NewServeMux()
 

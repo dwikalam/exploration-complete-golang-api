@@ -14,16 +14,16 @@ type txKey string
 var ctxTxKey = txKey("tx")
 
 type SQLTransactionManager struct {
-	db isqldb.Accessor
+	sqldb isqldb.Accessor
 }
 
-func NewManager(db isqldb.Accessor) (SQLTransactionManager, error) {
-	if db == nil {
-		return SQLTransactionManager{}, errors.New("isqldb.Accessor is nil")
+func NewSQLTransactionManager(sqldb isqldb.Accessor) (SQLTransactionManager, error) {
+	if sqldb == nil {
+		return SQLTransactionManager{}, errors.New("nil sqldb")
 	}
 
 	return SQLTransactionManager{
-		db: db,
+		sqldb: sqldb,
 	}, nil
 }
 
@@ -60,16 +60,16 @@ func (t *SQLTransactionManager) Run(
 		}
 	)
 
-	tx, err = t.db.Access().BeginTx(ctx, &txOpt)
+	tx, err = t.sqldb.Access().BeginTx(ctx, &txOpt)
 	if err != nil {
-		return err
+		return fmt.Errorf("sqldb BeginTx failed: %v", err)
 	}
 
 	defer handleRollback()
 	defer handleRecover()
 
 	if err = callback(CtxWithTx(ctx, tx)); err != nil {
-		return err
+		return fmt.Errorf("transaction callback failed: %v", err)
 	}
 
 	return tx.Commit()

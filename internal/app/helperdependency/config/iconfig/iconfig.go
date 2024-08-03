@@ -2,7 +2,7 @@ package iconfig
 
 import "time"
 
-type ConfigGetter interface {
+type Getter interface {
 	ServerConfigGetter
 	DbConfigGetter
 }

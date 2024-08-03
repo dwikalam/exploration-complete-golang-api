@@ -1,7 +1,7 @@
 package config
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -23,17 +23,17 @@ func NewEnvConfig() (EnvConfig, error) {
 	)
 
 	if err := godotenv.Load(); err != nil {
-		return EnvConfig{}, err
+		return EnvConfig{}, fmt.Errorf("godotenv Load failed: %v", err)
 	}
 
 	serverEnvConfig, err = newServerEnvConfig()
 	if err != nil {
-		return EnvConfig{}, nil
+		return EnvConfig{}, fmt.Errorf("creating server env config failed: %v", err)
 	}
 
 	dbEnvConfig, err = newDbEnvConfig()
 	if err != nil {
-		return EnvConfig{}, nil
+		return EnvConfig{}, fmt.Errorf("creating db env config failed: %v", err)
 	}
 
 	return EnvConfig{
@@ -106,24 +106,24 @@ func newServerEnvConfig() (serverEnvConfig, error) {
 	host = getEnvValue("SERVER_HOST", "localhost")
 	port, err = strconv.Atoi(getEnvValue("SERVER_PORT", "8080"))
 	if err != nil {
-		return serverEnvConfig{}, err
+		return serverEnvConfig{}, fmt.Errorf("strconv Atoi failed: %v", err)
 	}
 
 	readTimeout, err = time.ParseDuration(getEnvValue("SERVER_READ_TIMEOUT_MS", "1000") + "ms")
 	if err != nil {
-		return serverEnvConfig{}, err
+		return serverEnvConfig{}, fmt.Errorf("parseDuration failed: %v", err)
 	}
 	writeTimeout, err = time.ParseDuration(getEnvValue("SERVER_WRITE_TIMEOUT_MS", "2000") + "ms")
 	if err != nil {
-		return serverEnvConfig{}, err
+		return serverEnvConfig{}, fmt.Errorf("parseDuration failed: %v", err)
 	}
 	idleTimeout, err = time.ParseDuration(getEnvValue("SERVER_IDLE_TIMEOUT_MS", "60000") + "ms")
 	if err != nil {
-		return serverEnvConfig{}, err
+		return serverEnvConfig{}, fmt.Errorf("parseDuration failed: %v", err)
 	}
 	handlerTimeout, err = time.ParseDuration(getEnvValue("SERVER_HANDLER_TIMEOUT_MS", "1000") + "ms")
 	if err != nil {
-		return serverEnvConfig{}, err
+		return serverEnvConfig{}, fmt.Errorf("parseDuration failed: %v", err)
 	}
 	timeoutMessage = getEnvValue("SERVER_TIMEOUT_MESSAGE", "Timeout!")
 
@@ -146,7 +146,7 @@ type dbEnvConfig struct {
 func newDbEnvConfig() (dbEnvConfig, error) {
 	psqlConfig, err := newPsqlConfig()
 	if err != nil {
-		return dbEnvConfig{}, errors.New("creating psqlConfig failed")
+		return dbEnvConfig{}, fmt.Errorf("creating psql config failed: %v", err)
 	}
 
 	return dbEnvConfig{

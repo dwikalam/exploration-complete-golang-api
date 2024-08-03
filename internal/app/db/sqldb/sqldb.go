@@ -15,10 +15,10 @@ type DB struct {
 	db *sql.DB
 }
 
-func NewDB(driver string, dsn string) (DB, error) {
+func New(driver string, dsn string) (DB, error) {
 	db, err := sql.Open(driver, dsn)
 	if err != nil {
-		return DB{}, err
+		return DB{}, fmt.Errorf("opening sql db failed: %v", err)
 	}
 
 	return DB{
@@ -70,10 +70,10 @@ func (sql *DB) CheckHealth(ctx context.Context) (map[string]string, error) {
 	if err != nil {
 		stats := map[string]string{
 			"status": "down",
-			"error":  fmt.Sprintf("error db down: %v", err),
+			"error":  fmt.Sprintf("ping db failed: %v", err),
 		}
 
-		return stats, err
+		return stats, fmt.Errorf("ping db failed: %v", err)
 	}
 
 	dbStats := sql.db.Stats()
@@ -111,7 +111,7 @@ func (sql *DB) CheckHealth(ctx context.Context) (map[string]string, error) {
 
 func (sql *DB) Disconnect() error {
 	if err := sql.db.Close(); err != nil {
-		return fmt.Errorf("disconnecting db failed: %w", err)
+		return fmt.Errorf("disconnecting db failed: %v", err)
 	}
 
 	return nil

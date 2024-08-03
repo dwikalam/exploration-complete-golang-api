@@ -40,7 +40,7 @@ func run(args []string) error {
 
 	cfg, err = config.NewEnvConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("creating env config failed: %v", err)
 	}
 
 	m, err = migrate.New(
@@ -48,12 +48,12 @@ func run(args []string) error {
 		cfg.GetDbPsqlDSN(),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating migrate failed: %v", err)
 	}
 
 	arg, err = validatedArgs(args)
 	if err != nil {
-		return err
+		return fmt.Errorf("arg validation failed: %v", err)
 	}
 
 	switch arg {

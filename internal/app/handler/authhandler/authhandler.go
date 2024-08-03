@@ -7,7 +7,7 @@ import (
 
 	"github.com/dwikalam/ecommerce-service/internal/app/handler/authhandler/dto/authreqdto"
 	"github.com/dwikalam/ecommerce-service/internal/app/handler/authhandler/dto/authrespdto"
-	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/codec/defaultcodec"
+	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/codec/codec"
 	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/logger/ilogger"
 	"github.com/dwikalam/ecommerce-service/internal/app/service/authsvc/authsvcdto"
 	"github.com/dwikalam/ecommerce-service/internal/app/service/authsvc/iauthsvc"
@@ -16,12 +16,12 @@ import (
 
 type Auth struct {
 	logger      ilogger.Logger
-	authService iauthsvc.AuthServicer
+	authService iauthsvc.Servicer
 }
 
-func NewAuth(
+func New(
 	logger ilogger.Logger,
-	authService iauthsvc.AuthServicer,
+	authService iauthsvc.Servicer,
 ) (Auth, error) {
 	if logger == nil {
 		return Auth{}, errors.New("nil logger")
@@ -54,11 +54,11 @@ func (h *Auth) HandleRegister() http.Handler {
 			registerHandlerDto authrespdto.RegisteredUser
 		)
 
-		payloads, problems, err = defaultcodec.DecodeValid[*authreqdto.RegisterUser](r)
+		payloads, problems, err = codec.DecodeValid[*authreqdto.RegisterUser](r)
 		if problems != nil {
-			h.logger.Error(fmt.Sprintf("%s", problems))
+			h.logger.Error(fmt.Sprintf("decode valid failed: %s", problems))
 
-			defaultcodec.Encode(
+			codec.Encode(
 				w,
 				http.StatusBadRequest,
 				errMsg,
@@ -70,9 +70,9 @@ func (h *Auth) HandleRegister() http.Handler {
 		if err != nil {
 			const errData = "request json payload not valid"
 
-			h.logger.Error(err.Error())
+			h.logger.Error(fmt.Sprintf("decode valid failed: %v", err))
 
-			defaultcodec.Encode(
+			codec.Encode(
 				w,
 				http.StatusBadRequest,
 				errMsg,
@@ -91,9 +91,9 @@ func (h *Auth) HandleRegister() http.Handler {
 		if err != nil {
 			const errData = "email already exist"
 
-			h.logger.Error(err.Error())
+			h.logger.Error(fmt.Sprintf("register user service failed: %v", err))
 
-			defaultcodec.Encode(
+			codec.Encode(
 				w,
 				http.StatusBadRequest,
 				errMsg,
@@ -107,7 +107,7 @@ func (h *Auth) HandleRegister() http.Handler {
 			ID: registerUserSvcDto.ID,
 		}
 
-		defaultcodec.Encode(
+		codec.Encode(
 			w,
 			http.StatusCreated,
 			successMsg,

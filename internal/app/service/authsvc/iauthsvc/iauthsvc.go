@@ -6,7 +6,7 @@ import (
 	"github.com/dwikalam/ecommerce-service/internal/app/service/authsvc/authsvcdto"
 )
 
-type AuthServicer interface {
+type Servicer interface {
 	RegisterUser(
 		ctx context.Context,
 		fullName string,

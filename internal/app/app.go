@@ -35,9 +35,9 @@ func Run(
 	defer cancel()
 
 	var (
-		defaultLogger logger.Default
-		cfg           config.EnvConfig
-		psqlDB        sqldb.DB
+		lg     logger.Logger
+		cfg    config.EnvConfig
+		psqlDB sqldb.DB
 
 		txManager transaction.SQLTransactionManager
 
@@ -53,7 +53,7 @@ func Run(
 		err error
 	)
 
-	defaultLogger = logger.NewDefault(stdout, stderr)
+	lg = logger.New(stdout, stderr)
 
 	cfg, err = config.NewEnvConfig()
 	if err != nil {
@@ -66,23 +66,23 @@ func Run(
 	}
 
 	// Databases
-	psqlDB, err = sqldb.NewDB(cfg.GetDbPsqlDriver(), cfg.GetDbPsqlDSN())
+	psqlDB, err = sqldb.New(cfg.GetDbPsqlDriver(), cfg.GetDbPsqlDSN())
 	if err != nil {
 		return fmt.Errorf("creating psqldb failed: %w", err)
 	}
 	_, err = psqlDB.CheckHealth(ctx)
 	if err != nil {
-		return fmt.Errorf("check psqldb health failed: %w", err)
+		return fmt.Errorf("checking psqldb health failed: %w", err)
 	}
 
 	// Transaction Manager
-	txManager, err = transaction.NewManager(&psqlDB)
+	txManager, err = transaction.NewSQLTransactionManager(&psqlDB)
 	if err != nil {
 		return fmt.Errorf("creating txManager failed: %w", err)
 	}
 
 	// Repositories
-	testStoreSQL, err = teststore.NewTest(&psqlDB)
+	testStoreSQL, err = teststore.NewSQLStore(&psqlDB)
 	if err != nil {
 		return fmt.Errorf("creating testStoreSQL failed: %w", err)
 	}
@@ -102,17 +102,16 @@ func Run(
 	}
 
 	// Handlers
-	testHandler, err = testhandler.NewTest(&defaultLogger, &testService)
+	testHandler, err = testhandler.New(&lg, &testService)
 	if err != nil {
 		return fmt.Errorf("creating testHandler failed: %w", err)
 	}
-	authHandler, err = authhandler.NewAuth(&defaultLogger, &authService)
+	authHandler, err = authhandler.New(&lg, &authService)
 	if err != nil {
 		return fmt.Errorf("creating authHandler failed: %w", err)
 	}
 
 	srvMux := route.NewHttpHandler(
-		&defaultLogger,
 		&testHandler,
 		&authHandler,
 	)
@@ -129,11 +128,11 @@ func Run(
 		wg sync.WaitGroup
 
 		listenAndServe = func() {
-			defaultLogger.Info(fmt.Sprintf("listening on %s", httpServer.Addr))
+			lg.Info(fmt.Sprintf("listening on %s", httpServer.Addr))
 
 			err := httpServer.ListenAndServe()
 			if err != nil && err != http.ErrServerClosed {
-				defaultLogger.Error(fmt.Sprintf("error listening and serving %s: %s", httpServer.Addr, err))
+				lg.Error(fmt.Sprintf("error listening and serving %s: %s", httpServer.Addr, err))
 
 				return
 			}
@@ -149,17 +148,17 @@ func Run(
 
 			err := httpServer.Shutdown(shutdownCtx)
 			if err != nil {
-				defaultLogger.Error(fmt.Sprintf("shutting down http server: %s", err))
+				lg.Error(fmt.Sprintf("shutting down http server: %s", err))
 			}
 
-			defaultLogger.Warn("server shutdown")
+			lg.Warn("server shutdown")
 
 			err = psqlDB.Disconnect()
 			if err != nil {
-				defaultLogger.Error(fmt.Sprintf("closing database: %s", err))
+				lg.Error(fmt.Sprintf("closing database: %s", err))
 			}
 
-			defaultLogger.Warn("database closed")
+			lg.Warn("database closed")
 		}
 	)
 

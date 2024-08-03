@@ -2,7 +2,7 @@ package iauthhandler
 
 import "net/http"
 
-type AuthHandler interface {
+type Handler interface {
 	HandleRegister() http.Handler
 	HandleLogin() http.Handler
 }

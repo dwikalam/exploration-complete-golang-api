@@ -13,14 +13,14 @@ import (
 )
 
 type Auth struct {
-	txManager itransaction.TransactionManager
-	authStore iuserstore.UserStorer
+	txManager itransaction.Manager
+	authStore iuserstore.Storer
 	crypter   icrypto.Crypter
 }
 
 func NewAuth(
-	txManager itransaction.TransactionManager,
-	authStore iuserstore.UserStorer,
+	txManager itransaction.Manager,
+	authStore iuserstore.Storer,
 	crypter icrypto.Crypter,
 ) (Auth, error) {
 	if txManager == nil {

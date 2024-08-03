@@ -2,26 +2,31 @@ package testhandler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/constant"
-	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/codec/defaultcodec"
+	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/codec/codec"
 	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/logger/ilogger"
 	"github.com/dwikalam/ecommerce-service/internal/app/service/testsvc/itestsvc"
 )
 
 type Test struct {
 	logger      ilogger.Logger
-	testService itestsvc.TestServicer
+	testService itestsvc.Servicer
 }
 
-func NewTest(
+func New(
 	logger ilogger.Logger,
-	testService itestsvc.TestServicer,
+	testService itestsvc.Servicer,
 ) (Test, error) {
-	if logger == nil || testService == nil {
-		return Test{}, errors.New("logger or testService is nil")
+	if logger == nil {
+		return Test{}, errors.New("logger is nil")
+	}
+
+	if testService == nil {
+		return Test{}, errors.New("testService is nil")
 	}
 
 	return Test{
@@ -34,9 +39,9 @@ func (h *Test) HandleHelloWorldResponse() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v, err := h.testService.HelloWorld(r.Context())
 		if err != nil {
-			h.logger.Error(err.Error())
+			h.logger.Error(fmt.Sprintf("HelloWorld service failed: %v", err))
 
-			defaultcodec.Encode[any](
+			codec.Encode[any](
 				w,
 				http.StatusInternalServerError,
 				constant.InternalServerErrorMsg,
@@ -46,7 +51,7 @@ func (h *Test) HandleHelloWorldResponse() http.Handler {
 			return
 		}
 
-		defaultcodec.Encode(
+		codec.Encode(
 			w,
 			http.StatusOK,
 			"HandleHelloWorldResponse successfully running",
@@ -60,9 +65,9 @@ func (h *Test) HandleTimeoutExceededResponse() http.Handler {
 		const duration = time.Second * 5
 
 		if err := h.testService.OperateFor(r.Context(), duration); err != nil {
-			h.logger.Error(err.Error())
+			h.logger.Error(fmt.Sprintf("OperateFor service failed: %v", err))
 
-			defaultcodec.Encode[any](
+			codec.Encode[any](
 				w,
 				http.StatusInternalServerError,
 				constant.InternalServerErrorMsg,
@@ -72,7 +77,7 @@ func (h *Test) HandleTimeoutExceededResponse() http.Handler {
 			return
 		}
 
-		defaultcodec.Encode[any](
+		codec.Encode[any](
 			w,
 			200,
 			"HandleTimeoutExceededResponse successfully running",
@@ -84,11 +89,10 @@ func (h *Test) HandleTimeoutExceededResponse() http.Handler {
 func (h *Test) HandleTransactionTest() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		v, err := h.testService.Transaction(r.Context())
-
 		if err != nil {
-			h.logger.Error(err.Error())
+			h.logger.Error(fmt.Sprintf("Transaction service failed: %v", err))
 
-			defaultcodec.Encode[any](
+			codec.Encode[any](
 				w,
 				http.StatusInternalServerError,
 				constant.InternalServerErrorMsg,
@@ -98,7 +102,7 @@ func (h *Test) HandleTransactionTest() http.Handler {
 			return
 		}
 
-		defaultcodec.Encode[any](
+		codec.Encode[any](
 			w,
 			http.StatusOK,
 			"Success",
