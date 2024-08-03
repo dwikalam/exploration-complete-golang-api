@@ -56,7 +56,7 @@ func (h *Auth) HandleRegister() http.Handler {
 
 		payloads, problems, err = codec.DecodeValid[*authreqdto.RegisterUser](r)
 		if problems != nil {
-			h.logger.Error(fmt.Sprintf("decode valid failed: %s", problems))
+			h.logger.Error(fmt.Sprintf("decode valid has problems: %s", problems))
 
 			codec.Encode(
 				w,
@@ -70,7 +70,7 @@ func (h *Auth) HandleRegister() http.Handler {
 		if err != nil {
 			const errData = "request json payload not valid"
 
-			h.logger.Error(fmt.Sprintf("decode valid failed: %v", err))
+			h.logger.Error(fmt.Sprintf("decode valid error: %v", err))
 
 			codec.Encode(
 				w,
@@ -117,7 +117,70 @@ func (h *Auth) HandleRegister() http.Handler {
 }
 
 func (h *Auth) HandleLogin() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	const (
+		errMsg     string = "failed to login"
+		successMsg string = "login successfully"
+	)
 
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var (
+			payload  *authreqdto.LoginUser
+			problems wrappertype.ProblemsMap
+			err      error
+		)
+
+		payload, problems, err = codec.DecodeValid[*authreqdto.LoginUser](r)
+		if problems != nil {
+			h.logger.Error(fmt.Sprintf("decode valid has problems: %s", problems))
+
+			codec.Encode(
+				w,
+				http.StatusBadRequest,
+				errMsg,
+				problems,
+			)
+
+			return
+		}
+		if err != nil {
+			const errData = "request json payload not valid"
+
+			h.logger.Error(fmt.Sprintf("decode valid error: %v", err))
+
+			codec.Encode(
+				w,
+				http.StatusBadRequest,
+				errMsg,
+				errData,
+			)
+
+			return
+		}
+
+		if err = h.authService.ValidateLoginAttempt(
+			r.Context(),
+			payload.Email,
+			payload.Password,
+		); err != nil {
+			const errData = "email or password incorrect"
+
+			h.logger.Error(fmt.Sprintf("ValidateLoginAttempt failed: %v", err))
+
+			codec.Encode(
+				w,
+				http.StatusUnauthorized,
+				errMsg,
+				errData,
+			)
+
+			return
+		}
+
+		codec.Encode[any](
+			w,
+			http.StatusOK,
+			successMsg,
+			nil,
+		)
 	})
 }

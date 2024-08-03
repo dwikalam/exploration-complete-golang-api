@@ -32,7 +32,7 @@ func (store *SQLStore) GetByEmail(ctx context.Context, email string) (userstored
 			FROM
 				user_
 			WHERE
-				email_ = ?
+				email_ = $1
 		`
 	)
 
@@ -61,6 +61,41 @@ func (store *SQLStore) GetByEmail(ctx context.Context, email string) (userstored
 	return user, err
 }
 
+func (store *SQLStore) IsEmailExist(ctx context.Context, email string) (bool, error) {
+	const (
+		query = `
+			SELECT EXISTS (
+				SELECT 
+					1
+				FROM
+					user_
+				WHERE
+					email_ = $1
+			)
+		`
+	)
+
+	var (
+		isExist bool
+	)
+
+	if err := store.sqldb.QueryRowContext(
+		ctx,
+		query,
+		email,
+	).Scan(
+		&isExist,
+	); err != nil {
+		return false, fmt.Errorf("QueryRowContext failed: %v", err)
+	}
+
+	if !isExist {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (store *SQLStore) Create(
 	ctx context.Context,
 	fullName string,
@@ -75,9 +110,9 @@ func (store *SQLStore) Create(
 				password_
 			) 
 			VALUES (
-				?, 
-				?, 
-				?
+				$1, 
+				$2, 
+				$3
 			)
 			RETURNING
 				id_,

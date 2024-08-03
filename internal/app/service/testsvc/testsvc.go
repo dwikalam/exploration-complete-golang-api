@@ -14,7 +14,7 @@ type Test struct {
 	testStore iteststore.Storer
 }
 
-func NewTest(
+func New(
 	txManager itransaction.Manager,
 	testStore iteststore.Storer,
 ) (Test, error) {

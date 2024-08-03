@@ -92,11 +92,11 @@ func Run(
 	}
 
 	// Services
-	testService, err = testsvc.NewTest(&txManager, &testStoreSQL)
+	testService, err = testsvc.New(&txManager, &testStoreSQL)
 	if err != nil {
 		return fmt.Errorf("creating testService failed: %w", err)
 	}
-	authService, err = authsvc.NewAuth(&txManager, &userStoreSQL, &bcrypt)
+	authService, err = authsvc.New(&txManager, &userStoreSQL, &bcrypt)
 	if err != nil {
 		return fmt.Errorf("creating authService failed: %w", err)
 	}

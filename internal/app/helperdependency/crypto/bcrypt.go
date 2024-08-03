@@ -18,8 +18,11 @@ func NewBcrypt(cost int) (Bcrypt, error) {
 
 func (b *Bcrypt) Hash(plain string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plain), b.cost)
+	if err != nil {
+		return "", fmt.Errorf("bcrypt generate from password failed: %v", err)
+	}
 
-	return string(hash), fmt.Errorf("bcrypt generate from password failed: %v", err)
+	return string(hash), nil
 }
 
 func (b *Bcrypt) Compare(hashed string, plain string) error {
