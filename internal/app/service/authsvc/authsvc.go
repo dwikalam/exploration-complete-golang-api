@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/dwikalam/ecommerce-service/internal/app/helperdependency/crypto/icrypto"
 	"github.com/dwikalam/ecommerce-service/internal/app/service/authsvc/authsvcdto"
@@ -50,73 +49,43 @@ func (s *Auth) RegisterUser(
 	password string,
 ) (authsvcdto.RegisteredUser, error) {
 	var (
-		wg sync.WaitGroup
+		isEmailExist        bool
+		hashedPassword      string
+		createdUserStoreDto userstoredto.User
+		registerUserSvcDto  authsvcdto.RegisteredUser
 
-		createUserStoreDto userstoredto.User
-		registerUserSvcDto authsvcdto.RegisteredUser
-		err                error
-
-		isEmailExistChan  chan bool  = make(chan bool, 1)
-		emailCheckErrChan chan error = make(chan error, 1)
-
-		hashedPasswordChan chan string = make(chan string, 1)
-		hashErrChan        chan error  = make(chan error, 1)
+		isEmailExistErr error
+		hashErr         error
+		createUserErr   error
 	)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	isEmailExist, isEmailExistErr = s.userStore.IsEmailExist(ctx, email)
 
-		var (
-			hashedPassword string
-			err            error
-		)
+	// Time consuming operation. Security measure
+	hashedPassword, hashErr = s.crypter.Hash(password)
 
-		hashedPassword, err = s.crypter.Hash(password)
-
-		hashedPasswordChan <- hashedPassword
-		hashErrChan <- err
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		var (
-			isEmailExist bool
-			err          error
-		)
-
-		isEmailExist, err = s.userStore.IsEmailExist(ctx, email)
-
-		isEmailExistChan <- isEmailExist
-		emailCheckErrChan <- err
-	}()
-
-	wg.Wait()
-
-	if err = <-emailCheckErrChan; err != nil {
-		return authsvcdto.RegisteredUser{}, fmt.Errorf("IsEmailExist failed: %v", err)
+	if isEmailExistErr != nil {
+		return authsvcdto.RegisteredUser{}, fmt.Errorf("IsEmailExist failed: %v", isEmailExistErr)
 	}
 
-	if err = <-hashErrChan; err != nil {
-		return authsvcdto.RegisteredUser{}, fmt.Errorf("hash password failed: %v", err)
+	if hashErr != nil {
+		return authsvcdto.RegisteredUser{}, fmt.Errorf("hash password failed: %v", hashErr)
 	}
 
-	if <-isEmailExistChan {
+	if isEmailExist {
 		return authsvcdto.RegisteredUser{}, errors.New("email already exist")
 	}
 
-	createUserStoreDto, err = s.userStore.Create(ctx, fullName, email, <-hashedPasswordChan)
-	if err != nil {
-		return authsvcdto.RegisteredUser{}, fmt.Errorf("creating user failed: %v", err)
+	createdUserStoreDto, createUserErr = s.userStore.Create(ctx, fullName, email, hashedPassword)
+	if createUserErr != nil {
+		return authsvcdto.RegisteredUser{}, fmt.Errorf("creating user failed: %v", createUserErr)
 	}
 
 	registerUserSvcDto = authsvcdto.RegisteredUser{
-		ID:       createUserStoreDto.ID,
-		FullName: createUserStoreDto.FullName,
-		Email:    createUserStoreDto.Email,
-		Password: createUserStoreDto.Password,
+		ID:       createdUserStoreDto.ID,
+		FullName: createdUserStoreDto.FullName,
+		Email:    createdUserStoreDto.Email,
+		Password: createdUserStoreDto.Password,
 	}
 
 	return registerUserSvcDto, nil
@@ -127,58 +96,36 @@ func (s *Auth) ValidateLoginAttempt(
 	email string,
 	plainPassword string,
 ) error {
-	var (
-		wg sync.WaitGroup
-
-		err error
-
-		userStoreDtoChan  chan userstoredto.User = make(chan userstoredto.User, 1)
-		getByEmailErrChan chan error             = make(chan error, 1)
-
-		compareErrChan chan error = make(chan error, 1)
+	const (
+		placeholderHash string = "$2a$10$WIXnEK.SmlrME91uuiybY.aHwsxzwdM3FMVGHij4ztYoyL8pX5iBu"
 	)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	var (
+		userStoreDto   userstoredto.User
+		hashedPassword string
 
-		const (
-			placeholderHash string = "$2a$10$WIXnEK.SmlrME91uuiybY.aHwsxzwdM3FMVGHij4ztYoyL8pX5iBu"
-		)
+		getByEmailErr error
+		compareErr    error
+	)
 
-		var (
-			userStoreDto userstoredto.User
-			err          error
-		)
+	userStoreDto, getByEmailErr = s.userStore.GetByEmail(ctx, email)
 
-		userStoreDto, err = s.userStore.GetByEmail(ctx, email)
-
-		getByEmailErrChan <- err
-
-		switch err != nil {
-		case true:
-			userStoreDtoChan <- userstoredto.User{Password: placeholderHash}
-		case false:
-			userStoreDtoChan <- userStoreDto
-		}
-
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		compareErrChan <- s.crypter.Compare((<-userStoreDtoChan).Password, plainPassword)
-	}()
-
-	wg.Wait()
-
-	if err = <-getByEmailErrChan; err != nil {
-		return fmt.Errorf("get user by email failed: %v", err)
+	switch userStoreDto.Password {
+	case "":
+		hashedPassword = placeholderHash
+	default:
+		hashedPassword = userStoreDto.Password
 	}
 
-	if err = <-compareErrChan; err != nil {
-		return fmt.Errorf("compare passwords failed: %v", err)
+	// Time consuming operation. Security measure
+	compareErr = s.crypter.Compare(hashedPassword, plainPassword)
+
+	if getByEmailErr != nil {
+		return fmt.Errorf("get user by email failed: %v", getByEmailErr)
+	}
+
+	if compareErr != nil {
+		return fmt.Errorf("compare passwords failed: %v", compareErr)
 	}
 
 	return nil
